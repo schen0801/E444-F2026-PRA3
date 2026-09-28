@@ -77,11 +77,19 @@ def chat(name=None):
         session['chat_memory'] = memory
         reply = f"Nice to meet you, {memory['name']}!"
     elif "hello" in message.lower():
-        reply = f"Hello! {memory['name']}"
+        reply = f"Hello, {memory['name']}!" if memory.get('name') else "Hello!"
     elif "what is my name" in message.lower():
-        reply = f"Your name is {memory['name']}."
+        if memory.get('name'):
+            reply = f"Your name is {memory['name']}."
+        else:
+            reply = "I don't know your name yet."
     else:
         reply = "I don't understand."
-    
 
     return {"reply": reply}
+
+@app.route('/logout')
+def logout():
+    # Forget the chatbot's memory without restarting the app
+    session.pop('chat_memory', None)
+    return redirect(url_for('index'))

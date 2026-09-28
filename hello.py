@@ -1,3 +1,4 @@
+import re
 from datetime import datetime, timezone
 
 from flask import Flask, render_template, request, session, redirect, url_for, flash
@@ -52,10 +53,35 @@ def index():
             flash('Looks like you have changed your email!')
         email = form.email.data
         form.email.data = ''
-        return render_template('index.html', form=form, name=name, email=email)
+        
+        return redirect(url_for('chat', name=name))
     return render_template('index.html', form=form, name=session.get('name'), email=session.get('email'))
 
 @app.route('/hello/<name>')
 def user(name):
     return render_template('user.html', name=name,
                            current_time=datetime.now(timezone.utc))
+
+@app.route("/chat", methods=["GET", "POST"])
+def chat(name=None):
+    name = name or request.args.get('name') or session.get('name')
+    if request.method == "GET":
+        return render_template('chat.html')
+
+    message = request.json["message"]
+    memory = session.get('chat_memory', {})
+    name_match = re.search(r"my name is\s+([A-Za-z][\w'-]*)", message, re.IGNORECASE)
+    
+    if name_match:
+        memory['name'] = name_match.group(1)
+        session['chat_memory'] = memory
+        reply = f"Nice to meet you, {memory['name']}!"
+    elif "hello" in message.lower():
+        reply = f"Hello! {memory['name']}"
+    elif "what is my name" in message.lower():
+        reply = f"Your name is {memory['name']}."
+    else:
+        reply = "I don't understand."
+    
+
+    return {"reply": reply}
